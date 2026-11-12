@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from .control import Invalid, SECTIONS, number
 
 DEFAULTS = {
-    "name": "Room Panel", "primary": "#82b8fa", "background": "#17202d", "logo": "",
+    "name": "Room Panel", "primary": "#bad7f2", "background": "#f6f1e9", "logo": "",
     "base_url": "", "tls_cert": "", "tls_key": "", "timezone": "",
 }
 PANEL_SECTIONS = ["presets", *SECTIONS.values(), "calendar"]

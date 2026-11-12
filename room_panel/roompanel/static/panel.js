@@ -13,7 +13,8 @@
     if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), {status: res.status});
     return data;
   };
-  const endpoint = suffix => `/api/panels/${encodeURIComponent(id)}${suffix}`;
+  const apiRoot = document.querySelector('meta[name="room-panel-api"]')?.content || 'api';
+  const endpoint = suffix => `../${apiRoot}/panels/${encodeURIComponent(id)}${suffix}`;
   const notify = message => { const n=$('#notice'); n.textContent=message; n.hidden=!message; if(message) setTimeout(()=>{ if(n.textContent===message)n.hidden=true; },4500); };
   const connected = yes => { const el=$('#connection'); el.classList.toggle('online',!!yes); el.querySelector('span').textContent=yes?'Connected':'Offline'; $('#footer-room').textContent=yes?'Controls are up to date':'Waiting for connection'; };
   const escAttr = esc;
@@ -44,28 +45,54 @@
     const glyph= domain==='light'?'☼':domain==='media_player'?'♫':domain==='script'?'↗':'⏻';
     return `<article data-state="${escAttr(e.state)}" class="device-card ${active?'is-active':''}"><div class="device-head"><div class="device-icon">${glyph}</div><div class="device-title"><h3>${esc(title)}</h3><p>${esc(detail)}</p></div>${toggle}</div>${controls?`<div class="device-controls">${controls}</div>`:''}</article>`;
   }
+  let currentView = 'overview';
+  const views = [
+    ['overview', 'Overview'], ['lights', 'Lights'], ['music', 'Music'],
+    ['scripts', 'Scripts'], ['calendar', 'Schedule'],
+  ];
+  function renderNavigation(sections, door) {
+    const nav = $('#panel-nav');
+    const tabs = views.filter(([key]) => key === 'overview' || sections.includes(key));
+    if (!tabs.some(([key]) => key === currentView)) currentView = 'overview';
+    nav.hidden = door || tabs.length <= 1;
+    const markup = tabs.map(([key, label]) =>
+      `<button type="button" data-view="${key}"${key === currentView ? ' aria-current="page"' : ''}>${label}</button>`).join('');
+    if (nav.innerHTML !== markup) nav.innerHTML = markup;
+  }
+  $('#panel-nav').addEventListener('click', event => {
+    const button = event.target.closest('button[data-view]');
+    if (!button || !state) return;
+    currentView = button.dataset.view;
+    render(state);
+    $('#panel-nav [aria-current="page"]')?.focus();
+  });
+
   function render(s) {
     state=s; document.title=`${s.room?.name||'Room'} · ${s.branding?.name||'Room Panel'}`;
     $('#room-name').textContent=s.room?.name||s.panel?.name||'Room'; $('#brand-name').textContent=s.branding?.name||'Home'; $('#room-label').textContent=(s.panel?.type||'control').toUpperCase()+' PANEL';
     if(s.branding?.primary) document.documentElement.style.setProperty('--accent',s.branding.primary);
-    if(s.branding?.background) document.documentElement.style.setProperty('--page-bg',s.branding.background);
+    if(s.branding?.background) document.documentElement.style.setProperty('--brand-background',s.branding.background);
     const logo=$('#brand-logo'), mark=$('.brand-mark'); if(s.branding?.logo){logo.src=s.branding.logo;logo.hidden=false;mark.hidden=true;}else{logo.hidden=true;mark.hidden=false;}
     connected(!!s.connected); app.classList.toggle('disconnected',!s.connected);
-    const door=s.panel?.type==='door'; $('#door-view').hidden=!door; $('#sections').hidden=door;
+    const door=s.panel?.type==='door', sections=s.panel?.sections||[];
+    renderNavigation(sections, door);
+    const showDevices=!door&&currentView!=='calendar';
+    $('#door-view').hidden=!door;
+    $('#sections').hidden=!showDevices;
     if(door){
       const cal=s.calendar||{}, status=cal.status||'unknown', card=$('#door-view'); card.classList.toggle('busy',status==='busy');card.classList.toggle('free',status==='free');
       $('#door-status').textContent=status==='busy'?'In use':status==='free'?'Available':'Status unknown';
       $('#door-until').textContent=status==='busy'&&cal.until?`Busy until ${new Date(cal.until).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:cal.timezone||undefined})}`:'';
       $('#availability').innerHTML=(cal.intervals||[]).slice(0,5).map(i=>`<div class="time-row"><span>${new Date(i.start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:cal.timezone||undefined})}</span><span class="dash">—</span><span>${new Date(i.end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:cal.timezone||undefined})}</span></div>`).join('')||'<p class="muted">No upcoming changes</p>';
-    } else if(!activeSliders.size) renderSections(s);
-    const presets=s.presets||[]; $('#presets-section').hidden=!(s.panel?.sections||[]).includes('presets')||!presets.length; $('#presets').innerHTML=presets.map(p=>`<div class="preset-wrap"><div class="preset"><span class="preset-icon">✦</span><span><strong>${esc(p.name)}</strong><small>Revision ${esc(p.revision??'—')}</small></span></div><div class="preset-actions"><button data-preset-apply="${escAttr(p.id)}" ${!s.connected||!p.can_apply?'disabled':''}>Activate</button>${s.pin_set?`<button data-preset-capture="${escAttr(p.id)}" ${!s.connected?'disabled':''}>Capture</button>`:''}</div></div>`).join('');
-    const showCal=(s.panel?.sections||[]).includes('calendar')&&s.calendar; $('#calendar-section').hidden=!showCal;
+    } else if(showDevices&&!activeSliders.size) renderSections(s);
+    const presets=s.presets||[]; $('#presets-section').hidden=door||currentView!=='overview'||!sections.includes('presets')||!presets.length; $('#presets').innerHTML=presets.map(p=>`<div class="preset-wrap"><div class="preset"><span class="preset-icon">✦</span><span><strong>${esc(p.name)}</strong></span></div><div class="preset-actions"><button data-preset-apply="${escAttr(p.id)}" ${!s.connected||!p.can_apply?'disabled':''}>Activate</button>${s.pin_set?`<button data-preset-capture="${escAttr(p.id)}" ${!s.connected?'disabled':''}>Capture</button>`:''}</div></div>`).join('');
+    const showCal=!door&&(currentView==='overview'||currentView==='calendar')&&sections.includes('calendar')&&s.calendar; $('#calendar-section').hidden=!showCal;
     if(showCal){ const c=s.calendar; $('#calendar').innerHTML=c.status==='unknown'?'<p class="muted">Schedule unavailable</p>':c.status==='free'?'<div class="calendar-state"><span class="free-dot"></span><div><strong>Available</strong><p>No booking in progress</p></div></div>':`<div class="calendar-state"><span class="busy-dot"></span><div><strong>In use</strong><p>${c.until?`Available at ${new Date(c.until).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:c.timezone||undefined})}`:'Booking in progress'}</p></div></div>`; }
   }
   function renderSections(s) {
     const supported=(s.entities||[]).filter(e=>['light','media_player','script'].includes(e.domain||e.entity_id?.split('.')[0]));
     const groups=[['lights','Lights',e=>['light'].includes(e.domain||e.entity_id?.split('.')[0])],['music','Music',e=>(e.domain||e.entity_id?.split('.')[0])==='media_player'],['scripts','Scenes & scripts',e=>(e.domain||e.entity_id?.split('.')[0])==='script']];
-    $('#sections').innerHTML=groups.filter(([key])=>(s.panel?.sections||[]).includes(key)).map(([key,title,filter])=>{const items=supported.filter(filter);return items.length?`<section class="section"><div class="section-heading"><div><p class="eyebrow">ROOM CONTROLS</p><h2>${title}</h2></div><span class="count">${items.length}</span></div><div class="device-grid">${items.map(entityCard).join('')}</div></section>`:'';}).join('')||'<div class="empty-state"><div>⌂</div><h2>Nothing to control yet</h2><p>This panel has no supported controls assigned.</p></div>';
+    $('#sections').innerHTML=groups.filter(([key])=>(currentView==='overview'||currentView===key)&&(s.panel?.sections||[]).includes(key)).map(([key,title,filter])=>{const items=supported.filter(filter);return items.length?`<section class="section"><div class="section-heading"><div><p class="eyebrow">ROOM CONTROLS</p><h2>${title}</h2></div><span class="count">${items.length}</span></div><div class="device-grid">${items.map(entityCard).join('')}</div></section>`:'';}).join('')||'<div class="empty-state"><div>⌂</div><h2>Nothing to control yet</h2><p>This panel has no supported controls assigned.</p></div>';
     for(const control of $('#sections').querySelectorAll('button,input,select')){
       const device=control.closest('[data-state]');
       control.disabled=!s.connected||['unknown','unavailable',''].includes(device?.dataset.state||'');

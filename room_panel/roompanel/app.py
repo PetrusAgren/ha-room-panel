@@ -127,6 +127,9 @@ class RoomPanel:
         async def ingress_only(request, handler):
             if not self.dev and (request.remote != INGRESS_PEER or not request.headers.get("X-Remote-User-Id")):
                 raise web.HTTPForbidden()
+            # This identity is trusted only on this app: the tablet listener
+            # never sets it and continues to require a paired device cookie.
+            request["ingress_user"] = request.headers.get("X-Remote-User-Id", "dev")
             if request.method not in {"GET", "HEAD", "OPTIONS"} and request.headers.get("X-Room-Panel") != "1":
                 raise web.HTTPForbidden()
             return await handler(request)
@@ -146,6 +149,16 @@ class RoomPanel:
         app.router.add_post("/api/panels/{id}/pair", self.new_pairing)
         app.router.add_post("/api/panels/{id}/revoke", self.revoke_panel)
         app.router.add_put("/api/settings", self.save_settings)
+        app.router.add_get("/panel/{id}", self.show_ingress_panel)
+        app.router.add_get("/static/panel.css", asset("panel.css"))
+        app.router.add_get("/static/panel.js", asset("panel.js"))
+        for suffix, handler in (("state", self.panel_state), ("events", self.events),
+                                ("command", self.command), ("unlock", self.unlock),
+                                ("presets/{preset}/preview", self.preview_preset),
+                                ("presets/{preset}/save", self.save_preset),
+                                ("presets/{preset}/apply", self.apply_preset)):
+            method = "GET" if suffix in {"state", "events"} else "POST"
+            app.router.add_route(method, f"/ingress-api/panels/{{id}}/{suffix}", handler)
         return app
 
     def panel_application(self):
@@ -259,6 +272,17 @@ class RoomPanel:
         self.get("panels", request.match_info["id"])
         return await asset("panel.html", device=True)(request)
 
+    async def show_ingress_panel(self, request):
+        self.get("panels", request.match_info["id"])
+        html = (STATIC / "panel.html").read_text(encoding="utf-8")
+        html = html.replace("</head>", '<meta name="room-panel-api" content="ingress-api"></head>')
+        return web.Response(text=html, content_type="text/html", headers={
+            "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+            "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'",
+        })
+
     async def redeem_pairing(self, request):
         value = await body(request)
         panel = self.get("panels", request.match_info["id"])
@@ -278,7 +302,10 @@ class RoomPanel:
     def authorize(self, request, section=None):
         panel = self.get("panels", request.match_info["id"])
         cookie = request.cookies.get(COOKIE, "")
-        if not cookie or not self.store.session(panel["id"], cookie):
+        ingress_user = request.get("ingress_user")
+        if ingress_user:
+            cookie = "ingress:" + hashlib.sha256(ingress_user.encode()).hexdigest()
+        elif not cookie or not self.store.session(panel["id"], cookie):
             raise Denied("Pair this panel to continue.")
         if section and (panel["type"] != "control" or section not in panel["sections"]):
             raise Denied("This panel cannot use that feature.")

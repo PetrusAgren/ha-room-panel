@@ -5,9 +5,10 @@
 Open Room Panel from **Settings → Apps**. The administration interface runs through Home Assistant Ingress. The app uses the Supervisor API for Home Assistant entities and commands.
 
 1. In **Installation**, set your display name, brand colors, optional PNG/JPEG/WebP logo and preset PIN.
-2. For tablets on the local network, configure a **Base URL** like `https://panel.example.net:8443` and a trusted TLS certificate and key stored under Home Assistant's `/ssl`. Use paths such as `fullchain.pem` and `privkey.pem`. Enable the tablet host port in the app's **Network** settings. Home Assistant Ingress and the tablet listener use separate ports.
+2. For standalone tablets on the local network, configure a **Base URL** like `https://panel.example.net:8443` and a trusted TLS certificate and key stored under Home Assistant's `/ssl`. Use paths such as `fullchain.pem` and `privkey.pem`. Enable the tablet host port in the app's **Network** settings. Home Assistant Ingress and the tablet listener use separate ports.
 3. Create a room profile from a Home Assistant area. Select devices manually or choose a Home Assistant label for automatic discovery. Explicitly add any scripts you want the panel to run.
-4. Create a **Control panel** or **Door panel** for the profile and use its pairing link. Open that link in the browser or kiosk app that will run the display. Save the stable panel URL as the start page.
+4. Create a **Control panel** or **Door panel** for the profile. Choose **Open panel** in Room Panel administration to use it from your signed-in Home Assistant session. This works through Ingress.
+5. For a standalone tablet, use **Pair panel** after configuring the tablet listener. Open the pairing link in the browser or kiosk app that will run the display. Save the stable tablet URL as the start page.
 
 Each pairing link is single use and expires. Revoking a panel disconnects that tablet and requires a new link.
 

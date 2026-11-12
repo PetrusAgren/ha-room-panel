@@ -109,6 +109,26 @@ class RoomPanelHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 401)
         self.assertEqual(self.ha.calls, [])
 
+    async def test_ingress_panel_uses_ingress_api_without_pairing_tablet(self):
+        profile = await self.create_profile()
+        panel_id = await self.create_panel(profile["id"])
+        page = await self.admin.get(f"/panel/{panel_id}")
+        self.assertEqual(page.status, 200)
+        html = await page.text()
+        self.assertIn("../static/panel.css", html)
+        self.assertIn('content="ingress-api"', html)
+        state_url = f"/ingress-api/panels/{panel_id}/state"
+        state = await self.checked(await self.admin.get(state_url))
+        self.assertEqual([item["id"] for item in state["entities"]], ["light-1"])
+        result = await self.checked(await self.admin.post(
+            f"/ingress-api/panels/{panel_id}/command", headers=self.headers,
+            json={"entity": "light-1", "action": "power", "value": False}))
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.ha.calls[-1][:3], ("light", "turn_off", "light.lamp"))
+        self.assertEqual((await self.device.get(f"/api/panels/{panel_id}/state")).status, 401)
+        self.assertEqual((await self.device.post(f"/ingress-api/panels/{panel_id}/command", headers=self.headers,
+                                                json={"entity": "light-1", "action": "power", "value": True})).status, 404)
+
     async def test_settings_require_write_header_and_do_not_return_secret(self):
         self.assertEqual((await self.admin.put("/api/settings", json={"pin": "1234"})).status, 403)
         data = await self.checked(await self.admin.put("/api/settings", headers=self.headers, json={

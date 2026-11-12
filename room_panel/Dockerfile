@@ -13,4 +13,4 @@ COPY roompanel ./roompanel
 COPY DOCS.md ./DOCS.md
 
 EXPOSE 8099 8443
-CMD ["python3", "-m", "roompanel"]
+CMD ["/command/with-contenv", "python3", "-m", "roompanel"]
