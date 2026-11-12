@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f6f8"><title>Room Panel · Administration</title>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">R</div><div><strong id="brandName">Room Panel</strong><small>ADMINISTRATION</small></div></div>
+      <nav aria-label="Admin sections"><button class="nav-item active" data-view="overview">Overview</button><button class="nav-item" data-view="profiles">Room profiles</button><button class="nav-item" data-view="panels">Panels</button><button class="nav-item" data-view="settings">Installation</button></nav>
+      <div class="side-foot"><span class="status-dot" id="connectionDot"></span><span id="connectionLabel">Connecting…</span></div>
+    </aside>
+    <main>
+      <header class="topbar"><div><div class="eyebrow">HOME ASSISTANT</div><h1 id="pageTitle">Overview</h1></div><button class="button quiet" id="refreshButton">Refresh</button></header>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <section class="view active" id="view-overview">
+        <div class="welcome card"><div><div class="eyebrow">YOUR INSTALLATION</div><h2>Room control, at a glance.</h2><p>Set up room profiles, pair your panels, and tailor the experience for this home.</p><div class="welcome-actions"><button class="button primary" data-jump="profiles">Create a room profile</button><button class="button" data-jump="panels">Manage panels</button></div></div><div class="welcome-art"><div class="art-ring"></div><div class="art-panel"><i></i><i></i><i></i><b>Good evening</b><span>Living room</span><div class="art-controls"><i></i><i></i><i></i></div></div></div></div>
+        <div class="stat-grid"><article class="stat card"><span>Room profiles</span><strong id="statProfiles">—</strong><small>Configured spaces</small></article><article class="stat card"><span>Panels</span><strong id="statPanels">—</strong><small>Across your home</small></article><article class="stat card"><span>Home Assistant</span><strong id="statHA">—</strong><small id="haDetail">Connection status</small></article></div>
+        <div class="section-heading"><div><div class="eyebrow">SETUP</div><h2>Get started</h2></div></div><div class="setup-grid"><button class="setup-card card" data-jump="profiles"><span class="setup-icon">⌂</span><b>Build room profiles</b><span>Choose devices and controls for each space.</span><em>Configure profiles →</em></button><button class="setup-card card" data-jump="panels"><span class="setup-icon">▣</span><b>Connect a panel</b><span>Create a stable link and pair a new screen.</span><em>Set up panels →</em></button></div>
+      </section>
+      <section class="view" id="view-profiles"><div class="toolbar"><p>Choose which Home Assistant devices and features appear in each room.</p><button class="button primary" id="addProfile">＋ New profile</button></div><div id="profilesList" class="card-list"></div></section>
+      <section class="view" id="view-panels"><div class="toolbar"><p>Each panel has its own stable link, room assignment, and pairing code.</p><button class="button primary" id="addPanel">＋ Add panel</button></div><div id="panelsList" class="card-list"></div></section>
+      <section class="view" id="view-settings"><div class="settings-wrap"><div class="settings-intro"><div class="eyebrow">PERSONALIZE THIS HOME</div><h2>Installation settings</h2><p>Branding, connection details, and calendar access for this Room Panel installation.</p></div><form id="settingsForm" class="card settings-form">
+        <h3>Appearance</h3><div class="field"><label for="settingName">Installation name</label><input id="settingName" name="name" placeholder="My Home"></div><div class="field-row"><div class="field"><label for="settingPrimary">Accent color</label><div class="color-input"><input id="settingPrimary" name="primary" type="color" value="#4f6bed"><span id="colorValue">#4F6BED</span></div></div><div class="field"><label for="settingBackground">Background color</label><div class="color-input"><input id="settingBackground" name="background" type="color" value="#f4f6f8"><span id="bgValue">#F4F6F8</span></div></div></div><div class="field"><label for="settingLogo">Logo <small>PNG, JPEG, or WebP · up to 1 MB</small></label><input id="settingLogo" type="file" accept="image/png,image/jpeg,image/webp"><div id="logoPreview" class="logo-preview"></div></div>
+        <h3>Network</h3><div class="field"><label for="settingBase">Base URL</label><input id="settingBase" name="base_url" placeholder="https://home.example.com"></div><div class="field-row"><div class="field"><label for="settingCert">TLS certificate path</label><input id="settingCert" name="tls_cert" placeholder="/ssl/fullchain.pem"></div><div class="field"><label for="settingKey">TLS key path</label><input id="settingKey" name="tls_key" placeholder="/ssl/privkey.pem"></div></div><div class="field"><label for="settingTimezone">Timezone</label><input id="settingTimezone" name="timezone" placeholder="Europe/Amsterdam"></div><div class="field"><label for="settingPin">Admin PIN <small>Leave blank to keep the current PIN</small></label><input id="settingPin" name="pin" type="password" autocomplete="new-password" placeholder="New PIN"></div>
+        <h3>Outlook calendar</h3><div class="field-row"><div class="field"><label for="outlookTenant">Tenant ID</label><input id="outlookTenant" name="outlook.tenant_id"></div><div class="field"><label for="outlookClient">Client ID</label><input id="outlookClient" name="outlook.client_id"></div></div><div class="field"><label for="outlookSecret">Client secret <small id="secretHint">Not configured</small></label><input id="outlookSecret" type="password" autocomplete="new-password" placeholder="Enter to replace saved secret"></div><div class="form-footer"><span id="settingsFeedback"></span><button class="button primary" type="submit">Save settings</button></div>
+      </form></div></section>
+      <footer>Room Panel <span>·</span> Home Assistant</footer>
+    </main>
+  </div>
+  <dialog id="editor"><form method="dialog" id="editorForm"><div class="dialog-head"><div><div class="eyebrow" id="dialogEyebrow">CONFIGURATION</div><h2 id="dialogTitle">Edit</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div><div id="dialogBody" class="dialog-body"></div><div class="dialog-footer"><button class="button" value="cancel">Cancel</button><button class="button primary" id="dialogSave" value="default">Save</button></div></form></dialog>
+  <script src="./admin.js" defer></script>
+</body></html>

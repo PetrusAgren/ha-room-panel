@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10151e">
+  <title>Room Panel</title>
+  <link rel="stylesheet" href="/static/panel.css">
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <header class="topbar">
+      <div class="brand"><img id="brand-logo" alt="" hidden><span class="brand-mark" aria-hidden="true">⌂</span><span id="brand-name">Home</span></div>
+      <div class="connection" id="connection"><i></i><span>Connecting</span></div>
+    </header>
+    <main>
+      <section class="welcome"><div><p class="eyebrow" id="room-label">ROOM PANEL</p><h1 id="room-name">Welcome</h1></div><div class="clock" id="clock"></div></section>
+      <section class="notice" id="notice" role="status" hidden></section>
+      <section id="door-view" class="door-card" hidden>
+        <div class="door-indicator" id="door-indicator"><span></span></div><div class="door-copy"><p class="eyebrow">ROOM STATUS</p><h2 id="door-status">Status unavailable</h2><p id="door-until" class="muted"></p></div>
+        <div class="availability" id="availability"></div>
+      </section>
+      <div id="sections"></div>
+      <section class="section presets-section" id="presets-section" hidden><div class="section-heading"><div><p class="eyebrow">QUICK RESTORE</p><h2>Presets</h2></div></div><div class="preset-grid" id="presets"></div></section>
+      <section class="section calendar-section" id="calendar-section" hidden><div class="section-heading"><div><p class="eyebrow">UP NEXT</p><h2>Room schedule</h2></div></div><div class="calendar-card" id="calendar"></div></section>
+    </main>
+    <footer>Room controls <span>·</span> <span id="footer-room">Ready when you are</span></footer>
+  </div>
+  <dialog id="pair-dialog" class="dialog"><form method="dialog" id="pair-form"><div class="dialog-icon">⌂</div><p class="eyebrow">CONNECT THIS DEVICE</p><h2>Pair your panel</h2><p class="muted">Enter the pairing token provided by your administrator.</p><label for="pair-token">Pairing token</label><input id="pair-token" name="token" autocomplete="one-time-code" required><div class="dialog-actions"><button class="button primary" type="submit">Connect</button></div><p class="form-error" id="pair-error" hidden></p></form></dialog>
+  <dialog id="pin-dialog" class="dialog"><form method="dialog" id="pin-form"><div class="dialog-icon">↗</div><p class="eyebrow" id="pin-eyebrow">PRESET RESTORE</p><h2 id="pin-title">Restore preset</h2><p class="muted" id="pin-description">Enter your PIN to preview the changes.</p><label for="pin-input">PIN</label><input id="pin-input" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required><div class="dialog-actions"><button class="button quiet" value="cancel">Cancel</button><button class="button primary" type="submit" id="pin-submit">Preview</button></div><p class="form-error" id="pin-error" hidden></p></form></dialog>
+  <dialog id="preview-dialog" class="dialog preview-dialog"><form method="dialog" id="preview-form"><p class="eyebrow">PRESET PREVIEW</p><h2 id="preview-title">Review changes</h2><div id="preview-values" class="preview-values"></div><div id="preview-fixed" class="fixed-note" hidden></div><div class="dialog-actions"><button class="button quiet" value="cancel">Cancel</button><button class="button primary" type="submit">Save preset</button></div><p class="form-error" id="preview-error" hidden></p></form></dialog>
+  <script src="/static/panel.js" defer></script>
+</body>
+</html>
