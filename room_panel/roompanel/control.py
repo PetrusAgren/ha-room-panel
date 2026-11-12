@@ -9,10 +9,11 @@ from .ha import HAError, HAUnavailable
 SECTIONS = {"light": "lights", "media_player": "music", "script": "scripts"}
 PLAYER_FEATURES = {"play": 16384, "pause": 1, "volume": 4, "mute": 8, "source": 2048}
 COLOR_MODES = {"hs", "xy", "rgb", "rgbw", "rgbww"}
+MULTICHANNEL_MODES = {"rgbw": 4, "rgbww": 5}
 COLORS = {"color_temp": "color_temp_kelvin", **{mode: f"{mode}_color" for mode in COLOR_MODES}}
 ATTRIBUTES = {
     "brightness", "color_mode", "supported_color_modes", "color_temp_kelvin", "min_color_temp_kelvin",
-    "max_color_temp_kelvin", "rgb_color", "media_title", "media_artist", "source", "source_list",
+    "max_color_temp_kelvin", "rgb_color", "rgbw_color", "rgbww_color", "sacn_desired_color", "media_title", "media_artist", "source", "source_list",
     "volume_level", "is_volume_muted", "supported_features",
 }
 
@@ -94,6 +95,13 @@ def light_command(attrs, action, value):
         lower = attrs.get("min_color_temp_kelvin") or 1000
         upper = attrs.get("max_color_temp_kelvin") or 10000
         return "turn_on", {"color_temp_kelvin": round(number(value, lower, upper, "Temperature"))}
+    if action in MULTICHANNEL_MODES and action in modes:
+        count = MULTICHANNEL_MODES[action]
+        if not isinstance(value, list) or len(value) != count:
+            raise Invalid(f"Expected {count} {action.upper()} channel values.")
+        return "turn_on", {
+            COLORS[action]: [round(number(channel, 0, 255, "LED channel")) for channel in value],
+        }
     if action == "color" and modes & COLOR_MODES:
         if not isinstance(value, list) or len(value) != 3:
             raise Invalid("Expected three RGB values.")

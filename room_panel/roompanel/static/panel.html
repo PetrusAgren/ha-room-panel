@@ -30,6 +30,30 @@
   <dialog id="pair-dialog" class="dialog"><form method="dialog" id="pair-form"><div class="dialog-icon">⌂</div><p class="eyebrow">CONNECT THIS DEVICE</p><h2>Pair your panel</h2><p class="muted">Enter the pairing token provided by your administrator.</p><label for="pair-token">Pairing token</label><input id="pair-token" name="token" autocomplete="one-time-code" required><div class="dialog-actions"><button class="button primary" type="submit">Connect</button></div><p class="form-error" id="pair-error" hidden></p></form></dialog>
   <dialog id="pin-dialog" class="dialog"><form method="dialog" id="pin-form"><div class="dialog-icon">↗</div><p class="eyebrow" id="pin-eyebrow">PRESET RESTORE</p><h2 id="pin-title">Restore preset</h2><p class="muted" id="pin-description">Enter your PIN to preview the changes.</p><label for="pin-input">PIN</label><input id="pin-input" type="password" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" required><div class="dialog-actions"><button class="button quiet" value="cancel">Cancel</button><button class="button primary" type="submit" id="pin-submit">Preview</button></div><p class="form-error" id="pin-error" hidden></p></form></dialog>
   <dialog id="preview-dialog" class="dialog preview-dialog"><form method="dialog" id="preview-form"><p class="eyebrow">PRESET PREVIEW</p><h2 id="preview-title">Review changes</h2><div id="preview-values" class="preview-values"></div><div id="preview-fixed" class="fixed-note" hidden></div><div class="dialog-actions"><button class="button quiet" value="cancel">Cancel</button><button class="button primary" type="submit">Save preset</button></div><p class="form-error" id="preview-error" hidden></p></form></dialog>
+  <dialog id="color-dialog" class="dialog modal" aria-labelledby="color-title">
+    <form id="color-form" method="dialog" class="modal-box">
+      <h2 id="color-title">Light color</h2>
+      <label for="color-red">Red</label>
+      <input id="color-red" class="range" type="range" min="0" max="255">
+      <label for="color-green">Green</label>
+      <input id="color-green" class="range" type="range" min="0" max="255">
+      <label for="color-blue">Blue</label>
+      <input id="color-blue" class="range" type="range" min="0" max="255">
+      <div hidden>
+        <label for="color-white" id="color-white-label">White</label>
+        <input id="color-white" class="range" type="range" min="0" max="255">
+      </div>
+      <div hidden>
+        <label for="color-warm-white">Warm white</label>
+        <input id="color-warm-white" class="range" type="range" min="0" max="255">
+      </div>
+      <output id="color-preview" for="color-red color-green color-blue"></output>
+      <div class="dialog-actions modal-action">
+        <button class="btn button quiet" value="cancel" type="submit">Cancel</button>
+        <button class="btn button primary" value="apply" type="submit">Apply color</button>
+      </div>
+    </form>
+  </dialog>
   <script src="../static/panel.js" defer></script>
 </body>
 </html>

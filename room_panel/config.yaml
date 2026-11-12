@@ -1,5 +1,5 @@
 name: Room Panel
-version: "0.1.1"
+version: "0.1.2"
 slug: room_panel
 description: Room profiles and wall panel controls for Home Assistant
 url: https://github.com/PetrusAgren/ha-room-panel

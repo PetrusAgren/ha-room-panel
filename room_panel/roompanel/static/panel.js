@@ -19,6 +19,10 @@
   const connected = yes => { const el=$('#connection'); el.classList.toggle('online',!!yes); el.querySelector('span').textContent=yes?'Connected':'Offline'; $('#footer-room').textContent=yes?'Controls are up to date':'Waiting for connection'; };
   const escAttr = esc;
   function button(label, action, value, cls='') { return `<button class="icon-button ${cls}" data-action="${action}" data-value="${escAttr(value)}" aria-label="${escAttr(label)}" title="${escAttr(label)}">${label}</button>`; }
+  function colorHex(rgb) {
+    return '#' + rgb.map(value => Math.round(Math.max(0, Math.min(255, Number(value) || 0)))
+      .toString(16).padStart(2, '0')).join('');
+  }
   function entityCard(e) {
     const attrs=e.attributes||{}, domain=e.domain||e.entity_id?.split('.')[0]||'', active=['on','playing'].includes(String(e.state).toLowerCase());
     const supported = ['light','media_player','script'].includes(domain);
@@ -31,7 +35,19 @@
     const minK=Number(attrs.min_color_temp_kelvin||1000), maxK=Number(attrs.max_color_temp_kelvin||10000);
     if(domain==='light' && modes.some(m=>['brightness','white','color_temp','hs','rgb','rgbw','rgbww','xy'].includes(m))) controls+=`<div class="slider-row"><label>Brightness</label><input aria-label="Brightness" type="range" min="0" max="100" value="${Math.round((Number(attrs.brightness)||0)*100/255)}" data-action="brightness" data-entity="${escAttr(e.id)}"></div>`;
     if(domain==='light' && modes.includes('color_temp')) controls+=`<div class="slider-row"><label>Temperature</label><input aria-label="Color temperature" type="range" min="${minK}" max="${maxK}" value="${Number(attrs.color_temp_kelvin||attrs.color_temp)||minK}" data-action="color_temp" data-entity="${escAttr(e.id)}"></div>`;
-    if(domain==='light' && modes.some(m=>['hs','rgb','rgbw','rgbww','xy'].includes(m))){const rgb=Array.isArray(attrs.rgb_color)?attrs.rgb_color:[255,255,255];const hex='#'+rgb.map(v=>Math.max(0,Math.min(255,Number(v)||0)).toString(16).padStart(2,'0')).join('');controls+=`<label class="color-control">Color <input aria-label="Color" type="color" value="${hex}" data-action="color" data-entity="${escAttr(e.id)}"></label>`;}
+    if (domain === 'light' && modes.some(mode => ['hs','rgb','rgbw','rgbww','xy'].includes(mode))) {
+      const mode = ['rgbw', 'rgbww'].includes(attrs.color_mode)
+        ? attrs.color_mode : modes.includes('rgbww') ? 'rgbww' : modes.includes('rgbw') ? 'rgbw' : 'color';
+      const count = {rgbww: 5, rgbw: 4, color: 3}[mode];
+      const native = attrs[`${mode}_color`];
+      const desired = mode === 'rgbw' ? attrs.sacn_desired_color : null;
+      const fallback = Array.isArray(attrs.rgb_color) ? attrs.rgb_color : [255, 255, 255];
+      const channels = [native, desired].find(value => Array.isArray(value) && value.length === count)
+        ?? Array.from({length: count}, (_, index) => index < 3 ? fallback[index] : 0);
+      const hex = colorHex(channels.slice(0, 3));
+      const values = channels.map(value => Math.round(Math.max(0, Math.min(255, Number(value) || 0))));
+      controls += `<button type="button" class="btn color-control" data-action="pick-color" data-entity="${escAttr(e.id)}" data-mode="${mode}" data-value="${values.join(',')}" aria-label="Color for ${escAttr(title)}">Color <span class="color-swatch" style="background:${hex}" aria-hidden="true"></span></button>`;
+    }
     if(isMedia) {
       const flags=Number(attrs.supported_features||0), can=bit=>(flags&bit)!==0, media=[];
       if(can(16384))media.push(button('▶','play',e.id)); if(can(1))media.push(button('Ⅱ','pause',e.id));
@@ -184,10 +200,48 @@
   });
 
   const controls = $('#sections');
+  const colorDialog = $('#color-dialog');
+  const colorForm = $('#color-form');
+  const colorRanges = [...colorForm.querySelectorAll('input[type=range]')];
+  let colorSelection = null;
+
+  function updateColorPreview() {
+    const hex = colorHex(colorRanges.slice(0, 3).map(input => Number(input.value)));
+    const preview = $('#color-preview');
+    preview.textContent = hex.toUpperCase();
+    preview.style.setProperty('--selected-color', hex);
+  }
+
+  colorForm.addEventListener('input', updateColorPreview);
+  colorForm.addEventListener('submit', event => {
+    if (event.submitter?.value === 'cancel' || !colorSelection) return;
+    const {entity, mode, count} = colorSelection;
+    command(entity, mode, colorRanges.slice(0, count).map(input => Number(input.value)));
+  });
+  colorDialog.addEventListener('close', () => {
+    const entity = colorSelection?.entity;
+    colorSelection = null;
+    [...controls.querySelectorAll('[data-action="pick-color"]')]
+      .find(button => button.dataset.entity === entity)?.focus();
+  });
+
   controls.addEventListener('click', event => {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const {action, entity, value} = button.dataset;
+    if (action === 'pick-color') {
+      const mode = button.dataset.mode;
+      const values = value.split(',').map(Number);
+      colorSelection = {entity, mode, count: values.length};
+      $('#color-white-label').textContent = mode === 'rgbww' ? 'Cold white' : 'White';
+      colorRanges.forEach((input, index) => {
+        if (index >= 3) input.parentElement.hidden = index >= values.length;
+        input.value = values[index] ?? 0;
+      });
+      updateColorPreview();
+      colorDialog.showModal();
+      return;
+    }
     let input;
     if (action === 'power') input = value === 'true';
     if (action === 'mute') {
@@ -210,7 +264,6 @@
     let value = element.value;
     if (action === 'volume') value = Number(value) / 100;
     if (action === 'brightness' || action === 'color_temp') value = Number(value);
-    if (action === 'color') value = value.slice(1).match(/../g).map(part => Number.parseInt(part, 16));
     if (action === 'source' && !value) return;
     command(entity, action, value);
   });
